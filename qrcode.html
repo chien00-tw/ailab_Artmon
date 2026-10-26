@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>校園美感精靈圖鑑 - 教師專用 QR Code 列印工作台</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 離線純前端 QRCode 產生庫 -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <!-- Google Fonts: Noto Sans TC & Lexend -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@600;800&family=Noto+Sans+TC:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+    .font-num {
+      font-family: 'Lexend', sans-serif;
+    }
+    /* 列印專屬優化樣式 (A4 網格排版) */
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        padding: 0 !important;
+      }
+      .page-break {
+        page-break-after: always;
+        break-after: page;
+      }
+      .qr-card {
+        border: 1.5px dashed #64748b !important;
+        box-shadow: none !important;
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen p-4 sm:p-8">
+
+  <!-- 頂部控制面板 (列印時自動隱藏) -->
+  <div class="no-print max-w-5xl mx-auto mb-8 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">🖨️</span>
+          <h1 class="text-2xl font-black text-slate-900">美感精靈 QR Code 教師列印工作台</h1>
+        </div>
+        <p class="text-sm text-slate-500 mt-1">
+          支援一鍵輸出 16 款美感元素驗證條碼，可直接以 A4 紙張彩印或黑白列印，裁切後作為闖關密碼卡。
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <button onclick="window.print()" class="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-bold text-sm shadow-md transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+          <span>立即列印 A4 卡片</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 發卡模式切換 -->
+    <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+      <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+        <div class="font-bold text-amber-900 text-sm mb-1">📌 模式一：通用尋寶卡（推薦課堂採用）</div>
+        <p class="text-amber-800 leading-relaxed">
+          條碼包含元素標識（格式為 <code>AESTHETIC:{ID}</code>）。教師可隨身攜帶或護貝成 16 張卡牌，任何學生審核通過即可直接掃描領取。
+        </p>
+      </div>
+
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+        <div class="font-bold text-slate-900 text-sm mb-1">🔒 模式二：特定座號指定卡（防作弊）</div>
+        <div class="flex items-center gap-2 mt-2">
+          <label class="text-slate-600 font-medium">指定座號：</label>
+          <input type="number" id="targetSeatInput" placeholder="輸入座號 (例: 15)" min="1" max="50" class="w-32 px-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:ring-1 focus:ring-amber-500 focus:outline-none">
+          <button onclick="applySeatBinding()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-white font-semibold hover:bg-slate-700">生成指定碼</button>
+          <button onclick="clearSeatBinding()" class="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100">恢復通用</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- A4 列印卡片預覽區 -->
+  <div class="max-w-5xl mx-auto">
+    <!-- 標題提示（僅螢幕顯示） -->
+    <div class="no-print flex items-center justify-between mb-3 text-xs text-slate-500 font-semibold">
+      <span>卡片清單（16 隻精靈，以 4×4 格局排版，A4 兩頁或四頁最佳）</span>
+      <span>裁切線：虛線</span>
+    </div>
+
+    <!-- 16 格卡片網格 -->
+    <div id="cardsGrid" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      <!-- 由 JavaScript 自動計算並填入 -->
+    </div>
+  </div>
+
+  <script>
+    // 十六大元素標準資料庫（與 aesthetic_dex.html 完全對齊）
+    const AESTHETIC_DATABASE = [
+      { id: "contrast", no: "01", name: "對比獸", element: "對比", color: "#ef4444", hint: "明暗強烈反差、冷暖色相對立、粗細質地交界" },
+      { id: "symmetry", no: "02", name: "對稱精", element: "對稱", color: "#0284c7", hint: "左右鏡射倒影、中軸兩側均衡等重、幾何中心" },
+      { id: "repetition", no: "03", name: "反覆靈", element: "反覆", color: "#0d9488", hint: "相同單位圖案規律排列重現、欄杆/磁磚秩序" },
+      { id: "white_space", no: "04", name: "留白仙", element: "留白", color: "#52525b", hint: "寬廣純淨負空間、給予視覺呼吸與冥想之處" },
+      { id: "harmony", no: "05", name: "調和雀", element: "調和", color: "#f43f5e", hint: "相近色溫和諧相融、自然柔和無突兀稜角" },
+      { id: "rhythm", no: "06", name: "節奏兔", element: "節奏", color: "#9333ea", hint: "如五線譜起伏躍動的階梯、線條依序規律起伏" },
+      { id: "movement", no: "07", name: "律動狐", element: "律動", color: "#ea580c", hint: "波浪起伏流暢動態、方向引導與浪潮般線條" },
+      { id: "space", no: "08", name: "場域娃", element: "場域", color: "#0891b2", hint: "深邃長廊空間景深、透視消失點、空間邊界" },
+      { id: "balance", no: "09", name: "均衡王", element: "均衡", color: "#854d0e", hint: "非對稱卻達致視覺力學平穩、沉著安定的構圖" },
+      { id: "gradient", no: "10", name: "漸層凍", element: "漸層", color: "#0284c7", hint: "色彩明度梯次柔和轉變、光暈過渡與水痕暈染" },
+      { id: "emphasis", no: "11", name: "強弱獺", element: "強弱", color: "#b91c1c", hint: "畫面核心焦點主角、萬綠叢中一點紅的聚焦" },
+      { id: "timbre", no: "12", name: "音守宮", element: "音色", color: "#ca8a04", hint: "材質通感聯想、宛如能聽見清脆或厚實聲音" },
+      { id: "texture", no: "13", name: "質感怪", element: "質感", color: "#15803d", hint: "樹皮岩石微觀肌理、粗糙凹凸或光滑拋光觸感" },
+      { id: "emotion", no: "14", name: "情緒鴞", element: "情緒", color: "#7e22ce", hint: "色溫激發心靈共鳴、雨後水窪孤寂或晴空雀躍" },
+      { id: "proportion", no: "15", name: "比例妖", element: "比例", color: "#ca8a04", hint: "黃金分割密碼、極大物體與微小物體的尺度參照" },
+      { id: "gesture", no: "16", name: "姿態豹", element: "姿態", color: "#1e293b", hint: "生命力向上攀附的藤蔓、躍動伸展的動態張力" }
+    ];
+
+    let currentBindingSeat = null;
+
+    function renderCards() {
+      const container = document.getElementById('cardsGrid');
+      container.innerHTML = '';
+
+      AESTHETIC_DATABASE.forEach((item, index) => {
+        // 卡片容器 (具備剪刀虛線，方便輸出裁切)
+        const card = document.createElement('div');
+        card.className = "qr-card bg-white rounded-2xl p-4 border-2 border-dashed border-slate-300 flex flex-col items-center justify-between text-center relative overflow-hidden";
+        
+        // QR Code 內容格式
+        // 若有綁定特定座號: AESTHETIC:{ID}:{SEAT}
+        // 若為通用關卡卡片: AESTHETIC:{ID}
+        const qrString = currentBindingSeat 
+          ? `AESTHETIC:${item.id}:${currentBindingSeat}`
+          : `AESTHETIC:${item.id}`;
+
+        const qrContainerId = `qr-${item.id}`;
+
+        card.innerHTML = `
+          <!-- 頂部編號與元素標記 -->
+          <div class="w-full flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
+            <span class="text-[10px] font-black font-num px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">No.${item.no}</span>
+            <span class="text-xs font-bold" style="color: ${item.color}">${item.element} 系</span>
+          </div>
+
+          <!-- 精靈名稱 -->
+          <h3 class="text-base font-black text-slate-900 tracking-wide">${item.name}</h3>
+
+          <!-- QR Code 生成容器 -->
+          <div class="my-2 p-2 bg-white rounded-xl border border-slate-100 shadow-sm flex items-center justify-center">
+            <div id="${qrContainerId}" class="w-[128px] h-[128px] flex items-center justify-center"></div>
+          </div>
+
+          <!-- 觀察指標摘要 (供教師提問或學生比對) -->
+          <p class="text-[10px] text-slate-500 leading-snug px-1 line-clamp-2 my-1">
+            ${item.hint}
+          </p>
+
+          <!-- 底部核簽與代碼標示 -->
+          <div class="w-full pt-2 border-t border-slate-100 mt-1 flex items-center justify-between text-[9px] text-slate-400">
+            <span class="font-mono text-[8px]">${qrString}</span>
+            <span class="font-semibold text-slate-500">教師簽核核發 ✓</span>
+          </div>
+        `;
+
+        container.appendChild(card);
+
+        // 使用 qrcodejs 即時在瀏覽器生成清晰向量點陣圖
+        new QRCode(document.getElementById(qrContainerId), {
+          text: qrString,
+          width: 128,
+          height: 128,
+          colorDark : "#0f172a",
+          colorLight : "#ffffff",
+          correctLevel : QRCode.CorrectLevel.M
+        });
+      });
+    }
+
+    // 座號綁定切換
+    function applySeatBinding() {
+      const val = document.getElementById('targetSeatInput').value.trim();
+      if (!val) {
+        alert("請輸入要綁定的學生座號！");
+        return;
+      }
+      currentBindingSeat = val;
+      renderCards();
+    }
+
+    function clearSeatBinding() {
+      currentBindingSeat = null;
+      document.getElementById('targetSeatInput').value = '';
+      renderCards();
+    }
+
+    // 頁面載入後自動渲染
+    window.onload = function() {
+      renderCards();
+    };
+  </script>
+</body>
+</html>

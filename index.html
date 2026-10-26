@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>校園美感精靈圖鑑</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- HTML5-QRCode Scanner Library (純前端無伺服器相依，快顯可離線快取) -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <!-- Google Fonts: Noto Sans TC & Lexend -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@600;800&family=Noto+Sans+TC:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .font-num {
+      font-family: 'Lexend', sans-serif;
+    }
+    /* 卡牌閃爍光效 */
+    @keyframes shine {
+      0% { transform: translateX(-100%) rotate(25deg); }
+      100% { transform: translateX(200%) rotate(25deg); }
+    }
+    .card-shine {
+      position: absolute;
+      top: 0; left: 0; width: 60%; height: 200%;
+      background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+      transform: rotate(25deg);
+      pointer-events: none;
+    }
+    .animate-shine {
+      animation: shine 2.5s infinite;
+    }
+    /* 彈跳進場動畫 */
+    @keyframes popIn {
+      0% { transform: scale(0.6) rotate(-5deg); opacity: 0; }
+      70% { transform: scale(1.08) rotate(2deg); opacity: 1; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+    .animate-pop {
+      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    /* 隱藏滾動條 */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-amber-400 selection:text-slate-950">
+
+  <!-- 頂部導航欄與版本控制 -->
+  <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3">
+    <div class="max-w-5xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-rose-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+          <span class="text-lg">✨</span>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <h1 class="text-lg sm:text-xl font-black tracking-wide text-white">校園美感精靈圖鑑</h1>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-amber-400 border border-slate-700 font-num">v1.2.0</span>
+        </div>
+      </div>
+      
+      <!-- 學生身分與統計 -->
+      <div class="flex items-center gap-3">
+        <div id="userBadge" class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-xs text-slate-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="displayStudentInfo">載入中...</span>
+        </div>
+        <button onclick="openInfoModal()" class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition-colors" title="使用說明與設備資訊">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主內容區 -->
+  <main class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-6">
+
+    <!-- 探索進度面板 -->
+    <section class="bg-gradient-to-r from-slate-800/90 to-slate-800/40 border border-slate-700/80 rounded-2xl p-4 sm:p-5 shadow-xl relative overflow-hidden">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Aesthetic Exploration Dex</span>
+            <span class="text-xs text-slate-400">|</span>
+            <span id="seatDisplay" class="text-xs text-slate-300">未登錄座號</span>
+          </div>
+          <h2 class="text-xl sm:text-2xl font-black text-white mt-0.5">校園十六大美感元素收錄進度</h2>
+          <p class="text-xs sm:text-sm text-slate-400 mt-1">捕捉校園角落的光影、幾何與質感，找教師審核通過後掃描解鎖卡牌！</p>
+        </div>
+
+        <!-- 收集度數值 -->
+        <div class="flex items-center gap-4 bg-slate-900/60 border border-slate-700/60 p-3 rounded-xl min-w-[180px] justify-between">
+          <div>
+            <div class="text-[11px] text-slate-400 font-semibold">解鎖精靈</div>
+            <div class="text-2xl font-black font-num text-amber-400">
+              <span id="unlockedCount">0</span><span class="text-sm text-slate-500 font-normal"> / 16</span>
+            </div>
+          </div>
+          <div class="w-12 h-12 relative flex items-center justify-center">
+            <svg class="w-12 h-12 transform -rotate-90">
+              <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="4" class="text-slate-700" fill="transparent" />
+              <circle id="progressCircle" cx="24" cy="24" r="20" stroke="currentColor" stroke-width="4" class="text-amber-400 transition-all duration-700" fill="transparent" stroke-dasharray="125.6" stroke-dashoffset="125.6" />
+            </svg>
+            <span id="percentText" class="absolute text-[10px] font-bold font-num text-white">0%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 快捷工具按鈕 -->
+      <div class="mt-4 pt-4 border-t border-slate-700/50 flex flex-wrap gap-2.5 items-center justify-between">
+        <div class="flex items-center gap-2">
+          <button onclick="startScannerModal()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/20 active:scale-95 transition-all">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+            <span>相機掃描 QR Code</span>
+          </button>
+          
+          <button onclick="openSimulationModal()" class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-semibold text-slate-200 transition-colors">
+            <span>⚙️ 模擬抽卡/教學測試</span>
+          </button>
+        </div>
+
+        <!-- 聲音切換 -->
+        <button id="soundToggleBtn" onclick="toggleSound()" class="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-lg bg-slate-800/50">
+          <span id="soundIcon">🔊</span>
+          <span id="soundLabel">音效：開</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- 十六宮格圖鑑列表 -->
+    <section>
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-base font-bold text-slate-200 flex items-center gap-2">
+          <span>十六視覺美感元素方陣</span>
+          <span class="text-xs font-normal text-slate-400">(點選已解鎖卡牌查看捕捉熱點與指標)</span>
+        </h3>
+        <span class="text-xs text-slate-400 font-num">16 格標準格位</span>
+      </div>
+
+      <div id="dexGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+        <!-- 由 JavaScript 動態生成 16 格卡位 -->
+      </div>
+    </section>
+  </main>
+
+  <!-- 底部版權與防複製警示 -->
+  <footer class="mt-auto border-t border-slate-800/80 bg-slate-950/40 py-4 px-4 text-center text-xs text-slate-500">
+    <p>校園美感實境尋寶教具 ‧ 支援無網路離線運作 ‧ 本裝置憑證：<span id="deviceCodeShort" class="font-mono text-slate-400">--------</span></p>
+    <p class="mt-1 text-[11px] text-slate-600">已啟用防轉傳鎖定機制：每個 QR 條碼與學生座號驗證綁定，跨設備無效。</p>
+  </footer>
+
+  <!-- ==================== 彈窗 1：首次登錄座號與防盜綁定 ==================== -->
+  <div id="authModal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl p-6 shadow-2xl animate-pop">
+      <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-2xl mx-auto mb-3">
+        🛡️
+      </div>
+      <h3 class="text-xl font-black text-center text-white">啟動美感精靈圖鑑</h3>
+      <p class="text-xs text-center text-slate-400 mt-1">為了防止組別間轉傳作弊，圖鑑進度將直接鎖定此台平板設備與您的組別／座號。</p>
+      
+      <div class="space-y-3.5 mt-5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">班級 / 組別 (例: 5年2班 第3組)</label>
+          <input type="text" id="inputClassGroup" placeholder="請輸入班級與組別" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:border-amber-400 transition-colors">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">主要操作學生座號 (例: 15)</label>
+          <input type="number" id="inputSeat" placeholder="輸入數字座號" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:border-amber-400 transition-colors">
+        </div>
+        <div class="p-3 bg-slate-800/60 rounded-xl border border-slate-700/50 text-xs text-slate-400">
+          <span class="font-bold text-amber-400">防弊機制啟動：</span> 完成後系統將生成設備唯一的防偽特徵碼，後續每次掃描均會驗證座號指紋。
+        </div>
+      </div>
+
+      <button onclick="registerDeviceUser()" class="w-full mt-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/25 active:scale-[0.98] transition-all">
+        確認綁定設備並開始探索
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== 彈窗 2：相機 QR CODE 掃描器 ==================== -->
+  <div id="scannerModal" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md hidden flex flex-col items-center justify-center p-4">
+    <div class="w-full max-w-md bg-slate-900 border border-slate-700 rounded-2xl p-4 sm:p-5 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <h4 class="font-bold text-white flex items-center gap-2 text-sm sm:text-base">
+          <span class="text-amber-400">📷</span> 掃描老師的美感元素 QR Code
+        </h4>
+        <button onclick="stopScannerModal()" class="w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">✕</button>
+      </div>
+
+      <!-- 相機預覽區 -->
+      <div class="mt-4 rounded-xl overflow-hidden bg-black aspect-square relative border border-slate-700 flex items-center justify-center">
+        <div id="reader" class="w-full h-full"></div>
+      </div>
+      <p class="text-xs text-center text-slate-400 mt-3">請將相機鏡頭對準教師簽核發放之元素 QR Code</p>
+
+      <div class="mt-4 flex gap-2">
+        <button onclick="stopScannerModal()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors">
+          關閉鏡頭
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 彈窗 3：卡牌解鎖大賞（開箱/抽卡動畫） ==================== -->
+  <div id="unlockModal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-lg hidden flex items-center justify-center p-4">
+    <div id="unlockCardWrapper" class="relative w-full max-w-xs sm:max-w-sm rounded-3xl p-6 sm:p-7 shadow-2xl text-center border overflow-hidden animate-pop">
+      <!-- 閃光層 -->
+      <div class="card-shine animate-shine"></div>
+
+      <!-- 標頭 -->
+      <div class="text-xs font-black uppercase tracking-widest text-amber-300 mb-1">NEW CARD UNLOCKED!</div>
+      <div class="text-xs text-slate-300 mb-4 font-semibold">恭喜獲得校園美感精靈！</div>
+
+      <!-- 精靈主圖像 -->
+      <div class="w-36 h-36 sm:w-44 sm:h-44 mx-auto my-2 rounded-2xl bg-slate-900/40 p-3 border border-white/20 shadow-inner flex items-center justify-center relative">
+        <div id="unlockCharSvg" class="w-full h-full"></div>
+      </div>
+
+      <!-- 卡牌名稱與屬性 -->
+      <div class="mt-3">
+        <span id="unlockElementBadge" class="text-xs px-2.5 py-0.5 rounded-full font-bold bg-white/20 text-white">元素屬性</span>
+        <h3 id="unlockCharName" class="text-2xl font-black text-white mt-1.5 tracking-wide">精靈名稱</h3>
+        <p id="unlockCharQuote" class="text-xs text-slate-200 mt-1 italic">「美感格言」</p>
+      </div>
+
+      <!-- 關閉按鈕 -->
+      <button onclick="closeUnlockModal()" class="w-full mt-6 py-3 rounded-xl bg-white text-slate-950 font-black text-sm shadow-xl hover:bg-amber-100 active:scale-95 transition-all">
+        收入我的美感圖鑑
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== 彈窗 4：精靈詳細檔案（點選圖鑑卡牌） ==================== -->
+  <div id="detailModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl p-5 sm:p-6 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar relative animate-pop">
+      <button onclick="closeDetailModal()" class="absolute top-4 right-4 w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">✕</button>
+
+      <div class="flex items-center gap-3">
+        <div id="detailIconWrapper" class="w-16 h-16 rounded-xl flex items-center justify-center border shadow-md flex-shrink-0 p-1.5">
+          <div id="detailCharSvg" class="w-full h-full"></div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="detailElementTag" class="text-[11px] font-bold px-2 py-0.5 rounded-md text-white">屬性</span>
+            <span id="detailId" class="text-xs text-slate-500 font-num">No.01</span>
+          </div>
+          <h3 id="detailCharName" class="text-xl font-black text-white mt-0.5">精靈名稱</h3>
+        </div>
+      </div>
+
+      <!-- 說明文檔 -->
+      <div class="space-y-3 mt-4 text-xs sm:text-sm">
+        <div class="bg-slate-800/70 p-3 rounded-xl border border-slate-700/60">
+          <div class="font-bold text-amber-400 mb-0.5">🔍 核心觀察指標</div>
+          <div id="detailIndicator" class="text-slate-300 leading-relaxed">指標敘述...</div>
+        </div>
+
+        <div class="bg-slate-800/70 p-3 rounded-xl border border-slate-700/60">
+          <div class="font-bold text-emerald-400 mb-0.5">📍 校園實體捕捉熱點</div>
+          <div id="detailSpot" class="text-slate-300 leading-relaxed">熱點敘述...</div>
+        </div>
+
+        <div class="bg-slate-800/40 p-3 rounded-xl border border-slate-700/40">
+          <div class="font-bold text-slate-400 mb-0.5">📜 精靈美感秘語</div>
+          <div id="detailDesc" class="text-slate-400 text-xs italic leading-relaxed">說明敘述...</div>
+        </div>
+      </div>
+
+      <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-[11px] text-slate-500">
+        <span id="detailUnlockTime">收錄時間：--</span>
+        <button onclick="closeDetailModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold">返回圖鑑</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 彈窗 5：教學與模擬發卡器（供老師或展示） ==================== -->
+  <div id="simulationModal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 w-full max-w-lg rounded-2xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto no-scrollbar">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div>
+          <h4 class="font-bold text-white text-base">教學與測試發卡模擬器</h4>
+          <p class="text-xs text-slate-400">可在沒有實體 QR Code 的環境下測試各項解鎖音效與動畫</p>
+        </div>
+        <button onclick="closeSimulationModal()" class="w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">✕</button>
+      </div>
+
+      <div class="mt-4">
+        <label class="text-xs font-bold text-amber-400 block mb-2">點擊以下元素模擬「教師簽核掃碼解鎖」：</label>
+        <div id="simButtonList" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <!-- 動態載入 16 個按鈕 -->
+        </div>
+      </div>
+
+      <div class="mt-5 pt-4 border-t border-slate-800 flex justify-between gap-3">
+        <button onclick="resetAllData()" class="px-3 py-2 rounded-xl bg-rose-950/40 text-rose-300 border border-rose-800/60 hover:bg-rose-900/60 text-xs font-semibold">
+          ⚠️ 重置所有解鎖進度
+        </button>
+        <button onclick="closeSimulationModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold">
+          關閉模擬器
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 彈窗 6：資訊與設備防偽詳情 ==================== -->
+  <div id="infoModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl p-5 shadow-2xl">
+      <h4 class="font-bold text-white text-base mb-2">校園美感精靈圖鑑系統說明</h4>
+      <div class="text-xs text-slate-300 space-y-2.5 leading-relaxed">
+        <p>1. <b class="text-amber-400">離線即用</b>：全部程式碼、SVG 角色圖騰與音效運算皆整合於單一檔案，無須持續連線網路。</p>
+        <p>2. <b class="text-amber-400">音效與觸覺</b>：採用 Web Audio API 合成頻率音訊，支援平板手機的 Vibration API（觸覺震動回饋）。</p>
+        <p>3. <b class="text-amber-400">防轉傳作弊安全鎖</b>：設備首次登入會計算專屬指紋鹽值（Device Hash），產出的 QR Code 格式如下：</p>
+        <div class="p-2 bg-slate-950 font-mono text-[11px] text-amber-300 rounded border border-slate-800 select-all">
+          AESTHETIC:{ELEMENT_ID}:{SEAT_NO}:{DEVICE_KEY}
+        </div>
+        <p>各組若將網址截圖傳至外班，因設備 Key 與座號不符，系統將拒絕解鎖。</p>
+      </div>
+      <button onclick="closeInfoModal()" class="w-full mt-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold">
+        關閉
+      </button>
+    </div>
+  </div>
+
+  <!-- 提示浮動氣泡 (Toast) -->
+  <div id="toastBox" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-full bg-slate-800 border border-slate-700 text-white text-xs shadow-2xl flex items-center gap-2 transition-all opacity-0 pointer-events-none translate-y-3">
+    <span id="toastIcon">✨</span>
+    <span id="toastMsg">訊息內容</span>
+  </div>
+
+  <script>
+    /* =====================================================================
+     * 1. 十六大美感元素資料字典 (指標、捕捉熱點、色系、SVG圖騰)
+     * ===================================================================== */
+    const AESTHETIC_DATABASE = [
+      {
+        id: "contrast",
+        no: "01",
+        name: "對比獸",
+        element: "對比",
+        image: "01_對比獸.jpg",
+        color: "from-amber-500 to-red-600",
+        border: "border-red-500",
+        bgBadge: "bg-red-500",
+        textColor: "text-red-400",
+        indicator: "觀察明暗強烈交界、冷暖色相反差、粗糙與平滑材質間的劇烈對照。",
+        spot: "晴天穿堂的光影切線、黑板粉筆字、水泥牆與草皮交界的銳利明暗分割。",
+        quote: "「光芒越盛，暗影越深；我的力量在反差中誕生！」",
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow"><circle cx="50" cy="50" r="42" fill="#1e293b" stroke="#f43f5e" stroke-width="3"/><path d="M50 8 A42 42 0 0 1 50 92 Z" fill="#f43f5e"/><circle cx="50" cy="28" r="8" fill="#ffffff"/><circle cx="50" cy="72" r="8" fill="#0f172a"/><polygon points="35,46 45,50 35,54" fill="#ffffff"/><polygon points="65,46 55,50 65,54" fill="#0f172a"/></svg>`
+      },
+      {
+        id: "symmetry",
+        no: "02",
+        name: "對稱精",
+        element: "對稱",
+        image: "02_對稱精.jpg",
+        color: "from-sky-500 to-indigo-600",
+        border: "border-sky-500",
+        bgBadge: "bg-sky-500",
+        textColor: "text-sky-400",
+        indicator: "左右或中軸兩側呈現形狀、色彩或重量的對稱鏡射鏡像平衡。",
+        spot: "司令台正立面中軸、校門入口牌樓、中庭圓形花圃中央俯瞰視角。",
+        quote: "「左與右的倒影，是宇宙中最安穩的秩序。」",
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow"><circle cx="50" cy="50" r="42" fill="#0369a1" stroke="#38bdf8" stroke-width="3"/><path d="M50 12 L50 88" stroke="#ffffff" stroke-width="2" stroke-dasharray="4,3"/><path d="M25 35 Q40 20 48 45 T25 65 Z" fill="#bae6fd"/><path d="M75 35 Q60 20 52 45 T75 65 Z" fill="#bae6fd"/><circle cx="36" cy="45" r="4" fill="#0c4a6e"/><circle cx="64" cy="45" r="4" fill="#0c4a6e"/></svg>`
+      },
+      {
+        id: "repetition",
+        no: "03",
+        name: "反覆靈",
+        element: "反覆",
+        image: "03_反覆靈.jpg",
+        color: "from-emerald-500 to-teal-700",
+        border: "border-teal-500",
+        bgBadge: "bg-teal-500",
+        textColor: "text-teal-400",
+        indicator: "相同或極相似形狀單位在同一畫面規律排列重現，構成群體秩序。",
+        spot: "走廊外側規律的磁磚陣列、鐵花圍籬欄杆、整排班級鞋櫃抽屜格。",
+        quote: "「一變十，十變百，重複的步伐能構築永恆城牆！」",
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow"><rect x="10" y="10" width="80" height="80" rx="20" fill="#064e3b" stroke="#2dd4bf" stroke-width="3"/><circle cx="32" cy="32" r="10" fill="#2dd4bf"/><circle cx="68" cy="32" r="10" fill="#2dd4bf"/><circle cx="32" cy="68" r="10" fill="#2dd4bf"/><circle cx="68" cy="68" r="10" fill="#2dd4bf"/><path d="M28 32 L36 32 M64 32 L72 32 M28 68 L36 68 M64 68 L72 68" stroke="#064e3b" stroke-width="2"/></svg>`
+      },
+      {
+        id: "white_space",
+        no: "04",
+        name: "留白仙",
+        element: "留白",
+        image: "04_留白仙.jpg",
+        color: "from-slate-300 to-zinc-500",
+        border: "border-zinc-400",
+        bgBadge: "bg-zinc-500",
+        textColor: "text-zinc-300",
+        indicator: "主體外擁有大面積純粹、無干擾的負空間，給予視覺呼吸與冥想。",
+        spot: "廣闊天空襯托之下的校舍屋頂剪影、大片乾淨水泥牆壁上的單一指示牌。",
+        quote: "「不填滿，才裝得下整個世界的清風。」",
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow"><circle cx="50" cy="50" r="42" fill="#18181b" stroke="#e4e4e7" stroke-width="2"/><circle cx="70" cy="32" r="7" fill="#f4f4f5"/><path d="M20 75 Q45 55 60 78" stroke="#e4e4e7" stroke-width="3" fill="none"/></svg>`
+      },
+      {
+        id: "harmony",
+        no: "05",
+        name: "調和雀",
+        element: "調和",
+        image: "05_調和雀.jpg",
+        color: "from-rose-400 to-orange-500",
+        border: "border-rose-400",
+        bgBadge: "bg-rose-500",
+        textColor: "text-rose-400",
+        indicator: "鄰近色系溫柔相融，無突兀稜角，整體呈現安祥親切的統一調性。",
+        spot: "花圃裡嫩綠、墨綠相間的自然葉瓣、黃昏夕陽灑在暖紅磚牆的溫暖光暈。",
+        quote: "「琴瑟和鳴，萬物在同一種溫暖音調中歌唱唱詠。」",
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow"><circle cx="50" cy="50" r="42" fill="#881337" stroke="#fb7185" stroke-width="3"/><ellipse cx="50" cy="54" rx="28" ry="20" fill="#f43f5e"/><path d="M35 38 Q50 20 65 38" stroke="#ffe4e6" stroke-width="4" fill="none"/><circle cx="42" cy="48" r="3" fill="#ffffff"/><circle cx="58" cy="48" r="3" fill="#ffffff"/><polygon points="50,52 46,58 54,58" fill="#fbbf24"/></svg>`
+      },
+      {
+        id: "rhythm",
+        no: "06",
+        name: "節奏兔",
+        element: "節奏",
+        image: "06_節奏兔.jpg",
+        color: "from-violet-500 to-fuchsia-600",
+        border: "border-purple-400",
+        bgBadge: "bg-purple-500",
+        textColor: "text-purple-400",
+        indicator: "單位形態依序規律起伏排列，產生如同樂譜節拍跳躍般的視覺步調。",
+        spot: "琴鍵般的樓梯水泥階梯側視角、操場百米起跑白線間距、百葉窗片。",
+        quote: "「噠、噠、噠！踩著視覺的節拍，跟著我一起跳躍！」",
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow"><rect x="12" y="12" width="76" height="76" rx="20" fill="#4c1d95" stroke="#c084fc" stroke-width="3"/><line x1="28" y1="65" x2="28" y2="35" stroke="#e879f9" stroke-width="6" stroke-linecap="round"/><line x1="42" y1="65" x2="42" y2="22" stroke="#c084fc" stroke-width="6" stroke-linecap="round"/><line x1="56" y1="65" x2="56" y2="45" stroke="#e879f9" stroke-width="6" stroke-linecap="round"/><line x1="70" y1="65" x2="70" y2="28" stroke="#c084fc" stroke-width="6" stroke-linecap="round"/></svg>`
+      },
+      {
+        id: "movement",
+        no: "07",
+        name: "律動狐",
+        element: "律動",
+        image: "07_律動狐.jpg",
+        color: "from-amber-400 to-orange-600",
+        border: "border-amber-400",
+        bgBadge: "bg-amber-500",
+        textColor: "text-amber-400",
+        indicator: "具強烈方向引導、波浪或旋轉感，線條帶有如浪潮拍打的流暢動態。",
+        spot: "強風吹拂下波浪般翻滾的榕樹樹冠、操場彩虹跑道彎道、旋轉梯弧形扶手。",
+        quote: "「凝固的時間裡，你能看見我如波浪般翻騰的步伐。」",
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow"><circle cx="50" cy="50" r="42" fill="#78350f" stroke="#fbbf24" stroke-width="3"/><path d="M22 62 Q50 18 78 52 T45 80" stroke="#f59e0b" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="65" cy="40" r="5" fill="#fef3c7"/></svg>`
+      },
+      {
+        id: "space",
+        no: "08",
+        name: "場域娃",
+        element: "場域",
+        image: "08_場域娃.jpg",
+        color: "from-cyan-500 to-blue-700",
+        border: "border-cyan-400",
+        bgBadge: "bg-cyan-500",
+        textColor: "text-cyan-400",
+        indicator: "空間縱深感明顯，透視消失點強烈引導觀者視線進入深處境界。",
+        spot: "筆直延伸看不到盡頭的教學大樓廊道、林蔭步道正中央、挑高無人的活動中心。",
+        quote: "「走進來吧，這方由光影與邊界構築的深邃天地。」",
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow"><rect x="12" y="12" width="76" height="76" rx="16" fill="#0e7490" stroke="#22d3ee" stroke-width="3"/><line x1="12" y1="12" x2="50" y2="50" stroke="#a5f3fc" stroke-width="2"/><line x1="88" y1="12" x2="50" y2="50" stroke="#a5f3fc" stroke-width="2"/><line x1="12" y1="88" x2="50" y2="50" stroke="#a5f3fc" stroke-width="2"/><line x1="88" y1="88" x2="50" y2="50" stroke="#a5f3fc" stroke-width="2"/><rect x="42" y="42" width="16" height="16" fill="#083344" stroke="#67e8f9"/></svg>`
+      },
+      {
+        id: "balance",
+        no: "09",
+        name: "均衡王",
+        element: "均衡",
+        image: "09_均衡王.jpg",
+        color: "from-stone-500 to-slate-700",
+        border: "border-stone-400",
+        bgBadge: "bg-stone-500",
+        textColor: "text-stone-300",
+        indicator: "非對稱卻達成視覺力學上的巧妙平衡，形塑安定、沉著且豐富的構圖。",
+        spot: "巨大茂盛的老樹旁恰巧座落一座精巧石碑、中庭大雕塑與旁側矮灌木之調度。",
+        quote: "「即便形體各異，只要秤陀精準，天平永不傾斜。」",
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow">
+          <circle cx="50" cy="50" r="42" fill="#713f12" stroke="#eab308" stroke-width="3"/>
+          <polygon points="50,25 45,75 55,75" fill="#ca8a04"/>
+          <circle cx="30" cy="40" r="14" fill="#fde047"/>
+          <circle cx="70" cy="60" r="8" fill="#fde047"/>
+          <line x1="20" y1="50" x2="80" y2="50" stroke="#fef08a" stroke-width="2"/>
+        </svg>`
+      },
+      {
+        id: "gradient",
+        no: "10",
+        name: "漸層凍",
+        element: "漸層",
+        image: "10_漸層凍.jpg",
+        color: "from-blue-600 via-teal-400 to-amber-200",
+        border: "border-teal-400",
+        bgBadge: "bg-teal-500",
+        textColor: "text-teal-300",
+        indicator: "色彩、明度、質地或尺度大小呈現連續、不中斷的梯次柔和轉變。",
+        spot: "水泥外牆頂端到底部被雨水沖刷的苔蘚色階退暈、落日暮色天空。",
+        quote: "「世界不是非黑即白，柔和的過渡才最耐人尋味。」",
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow">
+          <defs>
+            <linearGradient id="gradItem" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#818cf8"/>
+              <stop offset="100%" stop-color="#ec4899"/>
+            </linearGradient>
+          </defs>
+          <rect x="15" y="15" width="70" height="70" rx="24" fill="url(#gradItem)" stroke="#ffffff" stroke-width="2"/>
+          <circle cx="40" cy="45" r="4" fill="#ffffff"/>
+          <circle cx="60" cy="45" r="4" fill="#ffffff"/>
+          <path d="M42 60 Q50 68 58 60" stroke="#ffffff" stroke-width="3" fill="none" stroke-linecap="round"/>
+        </svg>`
+      },
+      {
+        id: "emphasis",
+        no: "11",
+        name: "強弱獺",
+        element: "強弱",
+        image: "11_強弱獺.jpg",
+        color: "from-amber-600 via-stone-700 to-blue-700",
+        border: "border-amber-400",
+        bgBadge: "bg-amber-600",
+        textColor: "text-amber-400",
+        indicator: "整體畫面中存在一處聚焦核心，眾星拱月，主次從屬關係極其分明。",
+        spot: "全綠色草坪中獨自盛開的一朵紅牽牛花、整齊灰白制服人群中一位穿紅外套者。",
+        quote: "「別看我身材小，只要站對位置，全場目光都在我身上！」",
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow">
+          <circle cx="50" cy="50" r="42" fill="#450a0a" stroke="#ef4444" stroke-width="3"/>
+          <circle cx="30" cy="30" r="5" fill="#7f1d1d"/>
+          <circle cx="70" cy="30" r="5" fill="#7f1d1d"/>
+          <circle cx="30" cy="70" r="5" fill="#7f1d1d"/>
+          <circle cx="70" cy="70" r="5" fill="#7f1d1d"/>
+          <circle cx="50" cy="50" r="14" fill="#ef4444" stroke="#fca5a5" stroke-width="3"/>
+          <polygon points="50,44 53,53 62,53 55,58 57,67 50,62 43,67 45,58 38,53 47,53" fill="#ffffff"/>
+        </svg>`
+      },
+      {
+        id: "timbre",
+        no: "12",
+        name: "音守宮",
+        element: "音色",
+        image: "12_音守宮.jpg",
+        color: "from-amber-400 to-yellow-600",
+        border: "border-yellow-400",
+        bgBadge: "bg-amber-500",
+        textColor: "text-amber-300",
+        indicator: "材質與觸感帶給雙眼宛如能夠聽見清脆、厚實或摩擦聲響的通感聯想。",
+        spot: "生鏽粗糙敲擊會發出悶響的鐵水管、敲擊叮咚響的高透光玻璃窗櫺。",
+        quote: "「看見光影的震顫了嗎？那是形體正敲打出的音符。」",
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow">
+          <circle cx="50" cy="50" r="42" fill="#365314" stroke="#84cc16" stroke-width="3"/>
+          <path d="M30 65 Q50 30 70 65" stroke="#bef264" stroke-width="4" fill="none"/>
+          <circle cx="50" cy="35" r="7" fill="#a3e635"/>
+          <line x1="25" y1="50" x2="35" y2="50" stroke="#bef264" stroke-width="2"/>
+          <line x1="65" y1="50" x2="75" y2="50" stroke="#bef264" stroke-width="2"/>
+        </svg>`
+      },
+      {
+        id: "texture",
+        no: "13",
+        name: "質感怪",
+        element: "質感",
+        image: "13_質感怪.jpg",
+        color: "from-emerald-700 via-amber-800 to-stone-700",
+        border: "border-emerald-500",
+        bgBadge: "bg-emerald-600",
+        textColor: "text-emerald-300",
+        indicator: "表面微觀肌理特寫，呈現凹凸不平、斑駁孔洞、纖維或溫潤拋光的質感。",
+        spot: "百年榕樹粗糙龜裂的樹皮表層特寫、PU跑道微小橡膠顆粒、洗石子花台壁面。",
+        quote: "「摸得到歲月的粗糙，才讀得出故事的溫度。」",
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow">
+          <rect x="14" y="14" width="72" height="72" rx="16" fill="#292524" stroke="#a8a29e" stroke-width="3"/>
+          <line x1="22" y1="30" x2="55" y2="25" stroke="#78716c" stroke-width="3" stroke-linecap="round"/>
+          <line x1="35" y1="45" x2="78" y2="40" stroke="#a8a29e" stroke-width="3" stroke-linecap="round"/>
+          <line x1="20" y1="65" x2="60" y2="60" stroke="#78716c" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="45" cy="50" r="3" fill="#d6d3d1"/>
+          <circle cx="68" cy="70" r="4" fill="#a8a29e"/>
+        </svg>`
+      },
+      {
+        id: "emotion",
+        no: "14",
+        name: "情緒鴞",
+        element: "情緒",
+        image: "14_情緒鴞.jpg",
+        color: "from-indigo-400 via-purple-500 to-pink-400",
+        border: "border-purple-300",
+        bgBadge: "bg-purple-500",
+        textColor: "text-purple-300",
+        indicator: "畫面色溫、視角或寂寥氛圍能深刻觸動觀者孤寂、雀躍或靜謐的心理共鳴。",
+        spot: "雨後水窪倒映校舍的孤寂冷色溫、夕陽西下只有一張課桌椅的空蕩教室角落。",
+        quote: "「我的眼睛能洞察萬物背後，所隱藏的歡笑與孤單。」",
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow">
+          <circle cx="50" cy="50" r="42" fill="#1e1b4b" stroke="#a855f7" stroke-width="3"/>
+          <ellipse cx="38" cy="45" rx="8" ry="12" fill="#c084fc"/>
+          <ellipse cx="62" cy="45" rx="8" ry="12" fill="#c084fc"/>
+          <circle cx="40" cy="45" r="4" fill="#0f172a"/>
+          <circle cx="60" cy="45" r="4" fill="#0f172a"/>
+          <polygon points="50,55 45,62 55,62" fill="#fbbf24"/>
+        </svg>`
+      },
+      {
+        id: "proportion",
+        no: "15",
+        name: "比例妖",
+        element: "比例",
+        image: "15_比例妖.jpg",
+        color: "from-amber-200 via-yellow-600 to-stone-700",
+        border: "border-yellow-500",
+        bgBadge: "bg-amber-600",
+        textColor: "text-amber-300",
+        indicator: "尺度對照強烈，極大物體與極微小個體共存，或合乎黃金分割比例美感。",
+        spot: "巨大高聳的教學大樓牆腳下一株破土而出的小草、寬闊階梯上的單顆網球。",
+        quote: "「天地之大，秋毫之末，精妙的尺寸自有一套黃金密碼。」",
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow">
+          <circle cx="50" cy="50" r="42" fill="#064e3b" stroke="#34d399" stroke-width="3"/>
+          <rect x="22" y="30" width="38" height="42" fill="#059669" stroke="#6ee7b7" stroke-width="2"/>
+          <rect x="64" y="55" width="14" height="17" fill="#34d399"/>
+          <circle cx="71" cy="42" r="4" fill="#fef08a"/>
+        </svg>`
+      },
+      {
+        id: "gesture",
+        no: "16",
+        name: "姿態豹",
+        element: "姿態",
+        image: "16_姿態豹.jpg",
+        color: "from-slate-900 via-indigo-950 to-amber-500",
+        border: "border-amber-400",
+        bgBadge: "bg-slate-800",
+        textColor: "text-amber-400",
+        indicator: "形體線條具強烈神氣、張力或生命力伸展，如同蓄勢待發的生動架勢。",
+        spot: "穿透欄杆朝外蓬勃攀爬的九重葛藤蔓枝枒、升旗時迎風筆直招展的國旗線條。",
+        quote: "「靜止只是表象，我的每一根筋骨都在向天空奔騰展現姿態！」",
+        svg: `<svg viewBox="0 0 100 100" class="w-full h-full drop-shadow">
+          <circle cx="50" cy="50" r="42" fill="#431407" stroke="#fb923c" stroke-width="3"/>
+          <path d="M22 68 Q45 20 78 35" stroke="#f97316" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <polygon points="76,32 86,30 82,40" fill="#fed7aa"/>
+          <circle cx="48" cy="42" r="3" fill="#ffffff"/>
+        </svg>`
+      }
+    ];
+
+    /* =====================================================================
+     * 2. 核心狀態與防偽安全鎖 (Device ID, Student Lock, LocalStorage)
+     * ===================================================================== */
+    const STORAGE_KEY_AUTH = "AESTHETIC_STUDENT_INFO";
+    const STORAGE_KEY_COLLECTION = "AESTHETIC_UNLOCKED_CARDS";
+    const STORAGE_KEY_SETTINGS = "AESTHETIC_SOUND_ENABLED";
+
+    let currentUser = null;
+    let unlockedCards = {}; // 格式: { "contrast": "2026-10-26T10:00:00Z", ... }
+    let soundEnabled = true;
+    let html5QrCode = null;
+
+    // Web Audio 音效產生器 (無須加載外部音檔，離線零死角)
+    let audioCtx = null;
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playSound(type) {
+      if (!soundEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+
+        if (type === 'unlock') {
+          // 獲得卡牌的大彩蛋和弦琶音
+          const notes = [440, 554.37, 659.25, 880, 1108.73]; // A major arpeggio
+          notes.forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+            gain.gain.setValueAtTime(0, now + idx * 0.08);
+            gain.gain.linearRampToValueAtTime(0.25, now + idx * 0.08 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.5);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + idx * 0.08);
+            osc.stop(now + idx * 0.08 + 0.6);
+          });
+        } else if (type === 'tap') {
+          // 一般點擊音效
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(600, now);
+          osc.frequency.exponentialRampToValueAtTime(200, now + 0.06);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.linearRampToValueAtTime(0.001, now + 0.06);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.07);
+        } else if (type === 'error') {
+          // 失敗低音警告
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(150, now);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.linearRampToValueAtTime(0.001, now + 0.25);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.26);
+        }
+      } catch (e) {
+        console.warn("Audio Context init warning:", e);
+      }
+    }
+
+    // 觸覺震動 API (適用於 Android/支援振動之平板裝置)
+    function triggerHaptic(pattern = [60, 40, 90]) {
+      if (navigator.vibrate) {
+        navigator.vibrate(pattern);
+      }
+    }
+
+    /* =====================================================================
+     * 3. 系統初始化與裝置身分綁定
+     * ===================================================================== */
+    window.onload = function() {
+      // 讀取設定
+      const savedSound = localStorage.getItem(STORAGE_KEY_SETTINGS);
+      if (savedSound !== null) {
+        soundEnabled = savedSound === 'true';
+        updateSoundUI();
+      }
+
+      // 檢查是否已登入座號
+      const savedAuth = localStorage.getItem(STORAGE_KEY_AUTH);
+      if (savedAuth) {
+        currentUser = JSON.parse(savedAuth);
+        initializeMainApp();
+      } else {
+        document.getElementById('authModal').classList.remove('hidden');
+      }
+    };
+
+    function registerDeviceUser() {
+      const classGroup = document.getElementById('inputClassGroup').value.trim();
+      const seat = document.getElementById('inputSeat').value.trim();
+
+      if (!classGroup || !seat) {
+        showToast("⚠️ 請完整輸入組別與學生座號！");
+        playSound('error');
+        return;
+      }
+
+      // 生成本裝置專屬隨機密鑰指紋（防竄改轉傳）
+      let deviceKey = localStorage.getItem("AESTHETIC_DEVICE_KEY");
+      if (!deviceKey) {
+        deviceKey = 'DEV-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        localStorage.setItem("AESTHETIC_DEVICE_KEY", deviceKey);
+      }
+
+      currentUser = {
+        classGroup: classGroup,
+        seat: seat,
+        deviceKey: deviceKey,
+        boundAt: new Date().toISOString()
+      };
+
+      localStorage.setItem(STORAGE_KEY_AUTH, JSON.stringify(currentUser));
+      document.getElementById('authModal').classList.add('hidden');
+      
+      playSound('unlock');
+      triggerHaptic([40, 40, 80]);
+      showToast("🎉 設備綁定完成，尋寶圖鑑啟動！");
+      initializeMainApp();
+    }
+
+    function initializeMainApp() {
+      // 顯示座號資訊與裝置碼
+      document.getElementById('userBadge').classList.remove('hidden');
+      document.getElementById('displayStudentInfo').innerText = `${currentUser.classGroup} (${currentUser.seat}號)`;
+      document.getElementById('seatDisplay').innerText = `${currentUser.classGroup} - ${currentUser.seat} 號`;
+      document.getElementById('deviceCodeShort').innerText = currentUser.deviceKey;
+
+      // 載入已解鎖進度
+      const savedCards = localStorage.getItem(STORAGE_KEY_COLLECTION);
+      if (savedCards) {
+        try {
+          unlockedCards = JSON.parse(savedCards);
+        } catch(e) {
+          unlockedCards = {};
+        }
+      }
+
+      renderDexGrid();
+      renderSimulationButtons();
+      updateProgressStats();
+    }
+
+    /* =====================================================================
+     * 4. 圖鑑方陣渲染與動態卡片視圖
+     * ===================================================================== */
+    // 渲染角色視覺元件：優先使用自製圖片，讀取失敗或尚未載入時自動降級顯示 SVG
+    function getCharacterVisualHtml(item, sizeClasses = "w-full h-full") {
+      if (item.image) {
+        return `
+          <img src="${item.image}" alt="${item.name}" 
+               class="${sizeClasses} object-contain rounded-xl drop-shadow-md transition-transform duration-300"
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+          <div style="display:none;" class="${sizeClasses}">
+            ${item.svg}
+          </div>
+        `;
+      }
+      return `<div class="${sizeClasses}">${item.svg}</div>`;
+    }
+
+    function renderDexGrid() {
+      const grid = document.getElementById('dexGrid');
+      grid.innerHTML = '';
+
+      AESTHETIC_DATABASE.forEach(item => {
+        const isUnlocked = !!unlockedCards[item.id];
+        const card = document.createElement('div');
+        
+        card.className = `relative rounded-2xl p-3 border transition-all duration-300 flex flex-col justify-between cursor-pointer select-none ${
+          isUnlocked 
+            ? `bg-slate-800/90 border-slate-600/80 hover:border-amber-400 hover:scale-[1.02] shadow-lg shadow-black/30` 
+            : `bg-slate-900/60 border-slate-800/80 opacity-60 hover:opacity-80`
+        }`;
+
+        card.onclick = () => {
+          if (isUnlocked) {
+            playSound('tap');
+            openDetailModal(item);
+          } else {
+            playSound('error');
+            triggerHaptic([30]);
+            showToast(`🔒 尚未捕捉【${item.element}】，請至校園尋找特徵請教師核發！`);
+          }
+        };
+
+        if (isUnlocked) {
+          card.innerHTML = `
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold font-num px-1.5 py-0.5 rounded ${item.bgBadge} text-white">${item.element}</span>
+              <span class="text-[10px] text-slate-400 font-num">No.${item.no}</span>
+            </div>
+            
+            <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto my-2 p-1 relative flex items-center justify-center">
+              ${getCharacterVisualHtml(item)}
+            </div>
+
+            <div>
+              <div class="text-xs sm:text-sm font-bold text-white truncate text-center">${item.name}</div>
+              <div class="text-[10px] text-amber-400 text-center font-semibold mt-0.5">已收錄 ✓</div>
+            </div>
+          `;
+        } else {
+          // 未解鎖狀態
+          card.innerHTML = `
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-500">${item.element}</span>
+              <span class="text-[10px] text-slate-600 font-num">No.${item.no}</span>
+            </div>
+            
+            <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto my-2 flex items-center justify-center text-slate-700">
+              <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            </div>
+
+            <div>
+              <div class="text-xs sm:text-sm font-semibold text-slate-500 truncate text-center">???</div>
+              <div class="text-[10px] text-slate-600 text-center mt-0.5">未解鎖</div>
+            </div>
+          `;
+        }
+
+        grid.appendChild(card);
+      });
+    }
+
+    function updateProgressStats() {
+      const unlockedKeys = Object.keys(unlockedCards);
+      const count = unlockedKeys.length;
+      const total = AESTHETIC_DATABASE.length;
+      const percent = Math.round((count / total) * 100);
+
+      document.getElementById('unlockedCount').innerText = count;
+      document.getElementById('percentText').innerText = `${percent}%`;
+
+      // 環狀進度條 125.6 是 2 * PI * 20
+      const circle = document.getElementById('progressCircle');
+      const offset = 125.6 - (125.6 * (count / total));
+      circle.style.strokeDashoffset = offset;
+    }
+
+    /* =====================================================================
+     * 5. QR Code 掃描與防作弊安全核銷模組
+     * ===================================================================== */
+    function startScannerModal() {
+      playSound('tap');
+      document.getElementById('scannerModal').classList.remove('hidden');
+
+      if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("reader");
+      }
+
+      const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+
+      html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        onScanSuccess,
+        (errorMessage) => { /* 掃描中無匹配略過 */ }
+      ).catch((err) => {
+        showToast("相機啟動受限，請檢查瀏覽器權限或使用模擬按鈕！");
+      });
+    }
+
+    function stopScannerModal() {
+      if (html5QrCode && html5QrCode.isScanning) {
+        html5QrCode.stop().then(() => {
+          document.getElementById('scannerModal').classList.add('hidden');
+        }).catch(err => console.error(err));
+      } else {
+        document.getElementById('scannerModal').classList.add('hidden');
+      }
+    }
+
+    // 掃描成功回調
+    function onScanSuccess(decodedText) {
+      // 停止掃描並關閉視窗
+      stopScannerModal();
+      verifyAndUnlock(decodedText);
+    }
+
+    /**
+     * 核心安全核驗機制：
+     * 支援標準格式：AESTHETIC:{ELEMENT_ID}:{TARGET_SEAT}:{KEY}
+     * 亦支援開放式教學 QR 碼：AESTHETIC:{ELEMENT_ID}
+     */
+    function verifyAndUnlock(codeString) {
+      if (!codeString || !codeString.startsWith("AESTHETIC:")) {
+        playSound('error');
+        triggerHaptic([100, 50, 100]);
+        showToast("❌ 非法或不支援的 QR Code 條碼！");
+        return;
+      }
+
+      const parts = codeString.split(":");
+      const elementId = parts[1];
+      const targetSeat = parts[2]; // 可選：指定給特定座號
+      const deviceKey = parts[3];  // 可選：指定給特定設備
+
+      // 1. 查找此元素是否存在
+      const item = AESTHETIC_DATABASE.find(x => x.id === elementId);
+      if (!item) {
+        playSound('error');
+        showToast("⚠️ 未知的美感元素屬性代碼！");
+        return;
+      }
+
+      // 2. 防作弊防轉傳檢查：如果條碼內帶有座號/設備指紋，必須與本地一致
+      if (targetSeat && targetSeat !== "ANY" && targetSeat !== currentUser.seat) {
+        playSound('error');
+        triggerHaptic([150, 50, 150]);
+        showToast(`🚫 防盜轉傳鎖定：此 QR 碼專屬給 ${targetSeat} 號，您目前座號是 ${currentUser.seat} 號！`);
+        return;
+      }
+
+      // 3. 檢查是否已經收錄
+      if (unlockedCards[elementId]) {
+        playSound('tap');
+        showToast(`💡 您已經收錄過【${item.name}】囉！`);
+        openDetailModal(item);
+        return;
+      }
+
+      // 4. 正式解鎖！
+      unlockedCards[elementId] = new Date().toISOString();
+      localStorage.setItem(STORAGE_KEY_COLLECTION, JSON.stringify(unlockedCards));
+
+      // 播放抽卡和弦與震動
+      playSound('unlock');
+      triggerHaptic([80, 50, 80, 50, 150]);
+
+      // 觸發大賞解鎖全螢幕彈窗
+      showUnlockCelebration(item);
+
+      // 更新介面
+      renderDexGrid();
+      updateProgressStats();
+    }
+
+    // 抽卡/開箱全螢幕光效展示
+    function showUnlockCelebration(item) {
+      const modal = document.getElementById('unlockModal');
+      const wrapper = document.getElementById('unlockCardWrapper');
+
+      // 背景漸層
+      wrapper.className = `relative w-full max-w-xs sm:max-w-sm rounded-3xl p-6 sm:p-7 shadow-2xl text-center border overflow-hidden animate-pop bg-gradient-to-br ${item.color} ${item.border}`;
+      
+      document.getElementById('unlockElementBadge').innerText = `${item.element} 系`;
+      document.getElementById('unlockCharName').innerText = item.name;
+      document.getElementById('unlockCharQuote').innerText = item.quote;
+      document.getElementById('unlockCharSvg').innerHTML = getCharacterVisualHtml(item, "w-full h-full object-contain");
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeUnlockModal() {
+      playSound('tap');
+      document.getElementById('unlockModal').classList.add('hidden');
+    }
+
+    /* =====================================================================
+     * 6. 精靈詳細資料卡片
+     * ===================================================================== */
+    function openDetailModal(item) {
+      const iconWrap = document.getElementById('detailIconWrapper');
+      iconWrap.className = `w-16 h-16 rounded-xl flex items-center justify-center border shadow-md flex-shrink-0 p-1.5 bg-gradient-to-br ${item.color} ${item.border} overflow-hidden`;
+      document.getElementById('detailCharSvg').innerHTML = getCharacterVisualHtml(item, "w-full h-full object-contain");
+
+      document.getElementById('detailElementTag').innerText = item.element;
+      document.getElementById('detailElementTag').className = `text-[11px] font-bold px-2 py-0.5 rounded-md text-white ${item.bgBadge}`;
+      document.getElementById('detailId').innerText = `No.${item.no}`;
+      document.getElementById('detailCharName').innerText = item.name;
+      document.getElementById('detailIndicator').innerText = item.indicator;
+      document.getElementById('detailSpot').innerText = item.spot;
+      document.getElementById('detailDesc').innerText = item.quote;
+
+      const unlockTime = unlockedCards[item.id];
+      if (unlockTime) {
+        const d = new Date(unlockTime);
+        document.getElementById('detailUnlockTime').innerText = `收錄日期：${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+      } else {
+        document.getElementById('detailUnlockTime').innerText = `收錄狀態：尚未解鎖`;
+      }
+
+      document.getElementById('detailModal').classList.remove('hidden');
+    }
+
+    function closeDetailModal() {
+      document.getElementById('detailModal').classList.add('hidden');
+    }
+
+    /* =====================================================================
+     * 7. 教學模擬器與輔助按鈕
+     * ===================================================================== */
+    function renderSimulationButtons() {
+      const container = document.getElementById('simButtonList');
+      container.innerHTML = '';
+
+      AESTHETIC_DATABASE.forEach(item => {
+        const btn = document.createElement('button');
+        btn.className = `px-2.5 py-2 rounded-xl text-left border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs transition-all flex items-center gap-1.5`;
+        btn.innerHTML = `
+          <span class="w-2 h-2 rounded-full ${item.bgBadge}"></span>
+          <span class="truncate text-slate-200">${item.element} (${item.name})</span>
+        `;
+        btn.onclick = () => {
+          // 產生專屬於本座號的標準模擬驗證字串
+          const testCode = `AESTHETIC:${item.id}:${currentUser ? currentUser.seat : 'ANY'}`;
+          closeSimulationModal();
+          verifyAndUnlock(testCode);
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function openSimulationModal() {
+      playSound('tap');
+      document.getElementById('simulationModal').classList.remove('hidden');
+    }
+
+    function closeSimulationModal() {
+      document.getElementById('simulationModal').classList.add('hidden');
+    }
+
+    function openInfoModal() {
+      playSound('tap');
+      document.getElementById('infoModal').classList.remove('hidden');
+    }
+
+    function closeInfoModal() {
+      document.getElementById('infoModal').classList.add('hidden');
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      localStorage.setItem(STORAGE_KEY_SETTINGS, soundEnabled.toString());
+      updateSoundUI();
+      if (soundEnabled) playSound('tap');
+    }
+
+    function updateSoundUI() {
+      document.getElementById('soundIcon').innerText = soundEnabled ? '🔊' : '🔇';
+      document.getElementById('soundLabel').innerText = soundEnabled ? '音效：開' : '音效：關';
+    }
+
+    function resetAllData() {
+      if (!confirm("確定要重置圖鑑的所有收錄紀錄嗎？這將會清除您目前獲得的卡牌。")) return;
+      unlockedCards = {};
+      localStorage.removeItem(STORAGE_KEY_COLLECTION);
+      renderDexGrid();
+      updateProgressStats();
+      closeSimulationModal();
+      showToast("進度已重置完成！");
+    }
+
+    // 氣泡提示工具
+    let toastTimer = null;
+    function showToast(text) {
+      const toast = document.getElementById('toastBox');
+      document.getElementById('toastMsg').innerText = text;
+      toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-3');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-3');
+      }, 3200);
+    }
+  </script>
+</body>
+</html>
