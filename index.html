@@ -81,6 +81,10 @@
         <button onclick="openGuideModal()" class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-800 border-2 border-slate-700 hover:bg-sky-500 hover:text-slate-900 flex items-center justify-center text-slate-300 transition-colors" title="課程指引">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
         </button>
+        <!-- 4. 登出 / 返回登錄頁面 -->
+        <button onclick="logoutToLogin()" class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-800 border-2 border-slate-700 hover:bg-rose-500 hover:text-white flex items-center justify-center text-slate-300 transition-colors" title="切換帳號 / 返回登錄">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        </button>
       </div>
     </div>
   </header>
@@ -89,49 +93,47 @@
   <main class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-6">
 
     <!-- 探索進度面板 -->
-    <section class="bg-gradient-to-r from-slate-800/90 to-slate-800/40 border-2 border-slate-700/80 rounded-3xl p-5 sm:p-7 shadow-xl relative overflow-hidden">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <div class="flex items-center gap-2 mb-2">
-            <span class="text-sm font-black uppercase tracking-wider text-amber-400 bg-amber-900/30 px-3 py-1 rounded-full">我的尋寶進度</span>
-            <span id="seatDisplay" class="text-sm font-bold text-slate-200">未登錄</span>
+    <section class="bg-slate-800/80 border border-slate-700 rounded-3xl p-5 sm:p-6 shadow-lg flex flex-col gap-4 sm:gap-5 relative overflow-hidden">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <!-- 左側：標題與資訊 -->
+        <div class="flex-1">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="px-3 py-1 bg-amber-500/20 text-amber-400 text-xs font-bold rounded-full">尋寶進度</span>
+            <span id="seatDisplay" class="text-sm font-bold text-slate-300">未登錄</span>
           </div>
-          <h2 class="text-2xl sm:text-3xl font-black text-white mt-1">校園美感元素收錄</h2>
-          <p class="text-base sm:text-lg font-medium text-slate-300 mt-2">尋找校園角落特徵，過關後掃描條碼解鎖卡牌！</p>
+          <h2 class="text-2xl sm:text-3xl font-black text-white tracking-wide">校園美感元素收錄</h2>
+          <p class="text-sm sm:text-base text-slate-400 mt-1">尋找校園特徵，過關後掃碼解鎖卡牌！</p>
         </div>
 
-        <!-- 收集度數值 -->
-        <div class="flex items-center gap-6 bg-slate-900/80 border-2 border-slate-700/60 p-4 sm:p-5 rounded-2xl min-w-[220px] justify-between shadow-inner">
-          <div>
-            <div class="text-sm text-slate-400 font-bold mb-1">目前解鎖</div>
-            <div class="text-4xl font-black font-num text-amber-400">
-              <span id="unlockedCount">0</span><span class="text-xl text-slate-500 font-bold"> / 16</span>
+        <!-- 右側：進度數據 (去外框，更融入背景) -->
+        <div class="flex items-center gap-4">
+          <div class="text-right">
+            <div class="text-sm text-slate-400 font-bold">目前解鎖</div>
+            <div class="text-3xl font-black font-num text-amber-400">
+              <span id="unlockedCount">0</span><span class="text-lg text-slate-500"> /16</span>
             </div>
           </div>
-          <div class="w-16 h-16 relative flex items-center justify-center">
-            <svg class="w-16 h-16 transform -rotate-90">
-              <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="6" class="text-slate-700" fill="transparent" />
-              <circle id="progressCircle" cx="32" cy="32" r="28" stroke="currentColor" stroke-width="6" class="text-amber-400 transition-all duration-700" fill="transparent" stroke-dasharray="175.9" stroke-dashoffset="175.9" />
+          <div class="w-14 h-14 relative flex items-center justify-center">
+            <svg class="w-14 h-14 transform -rotate-90">
+              <circle cx="28" cy="28" r="24" stroke="currentColor" stroke-width="4.5" class="text-slate-700" fill="transparent" />
+              <circle id="progressCircle" cx="28" cy="28" r="24" stroke="currentColor" stroke-width="4.5" class="text-amber-400 transition-all duration-700" fill="transparent" stroke-dasharray="150.8" stroke-dashoffset="150.8" />
             </svg>
-            <span id="percentText" class="absolute text-sm font-black font-num text-white">0%</span>
+            <span id="percentText" class="absolute text-xs font-black font-num text-white">0%</span>
           </div>
         </div>
       </div>
 
-      <!-- 快捷工具按鈕 (放大優化版) -->
-      <div class="mt-6 pt-5 border-t-2 border-slate-700/50 flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
-        <button onclick="startScannerModal()" class="w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-black text-xl shadow-lg shadow-amber-500/30 active:scale-95 transition-all">
-          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+      <!-- 操作按鈕區 (移除分隔線，排版更緊湊統一) -->
+      <div class="flex flex-col sm:flex-row gap-3 w-full">
+        <button onclick="startScannerModal()" class="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 sm:py-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-900 font-black text-lg shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-all">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
           <span>開始掃描 QR Code</span>
         </button>
         
-        <div class="flex items-center gap-3 justify-center">
-          <!-- 聲音切換 -->
-          <button id="soundToggleBtn" onclick="toggleSound()" class="flex items-center gap-2 text-sm font-bold text-slate-300 hover:text-white px-5 py-3 rounded-xl border-2 border-slate-600 bg-slate-800/80">
-            <span id="soundIcon" class="text-xl">🔊</span>
-            <span id="soundLabel">音效：開</span>
-          </button>
-        </div>
+        <button id="soundToggleBtn" onclick="toggleSound()" class="w-full sm:w-auto px-6 py-3.5 sm:py-4 rounded-2xl bg-slate-700/50 hover:bg-slate-700 border border-slate-600 text-slate-300 font-bold flex items-center justify-center gap-2 transition-all">
+          <span id="soundIcon" class="text-xl">🔊</span>
+          <span id="soundLabel">音效：開</span>
+        </button>
       </div>
     </section>
 
@@ -814,6 +816,27 @@
       initializeMainApp();
     }
 
+    // 登出並返回登錄頁面
+    function logoutToLogin() {
+      if (!confirm("確定要返回登錄頁面嗎？（若要更換使用者，請重新輸入組別與座號）")) return;
+      playSound('tap');
+      
+      // 清除本地登錄身分紀錄（保留圖鑑解鎖進度）
+      localStorage.removeItem(STORAGE_KEY_AUTH);
+      currentUser = null;
+      
+      // 清空輸入框
+      document.getElementById('inputClassGroup').value = '';
+      document.getElementById('inputSeat').value = '';
+      
+      // 更新背景狀態為未登錄
+      document.getElementById('seatDisplay').innerText = `未登錄`;
+      document.getElementById('deviceCodeShort').innerText = `--------`;
+      
+      // 顯示登錄彈窗
+      document.getElementById('authModal').classList.remove('hidden');
+    }
+
     function initializeMainApp() {
       // 顯示座號資訊與裝置碼
       document.getElementById('seatDisplay').innerText = `${currentUser.classGroup} - ${currentUser.seat} 號`;
@@ -925,9 +948,9 @@
       document.getElementById('unlockedCount').innerText = count;
       document.getElementById('percentText').innerText = `${percent}%`;
 
-      // 環狀進度條 175.9 是 2 * PI * 28 (新版圈圈半徑 28)
+      // 環狀進度條 150.8 是 2 * PI * 24 (新版簡潔圈圈半徑 24)
       const circle = document.getElementById('progressCircle');
-      const offset = 175.9 - (175.9 * (count / total));
+      const offset = 150.8 - (150.8 * (count / total));
       circle.style.strokeDashoffset = offset;
     }
 
