@@ -8,6 +8,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- HTML5-QRCode Scanner Library (純前端無伺服器相依，快顯可離線快取) -->
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <!-- 離線純前端 QRCode 產生庫 -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <!-- Google Fonts: Noto Sans TC & Lexend -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -55,24 +57,29 @@
   <!-- 頂部導航欄與版本控制 -->
   <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3">
     <div class="max-w-5xl mx-auto flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-rose-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
-          <span class="text-lg">✨</span>
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-rose-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+          <span class="text-2xl">✨</span>
         </div>
         <div class="flex items-baseline gap-2">
-          <h1 class="text-lg sm:text-xl font-black tracking-wide text-white">校園美感精靈圖鑑</h1>
-          <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-amber-400 border border-slate-700 font-num">v1.2.0</span>
+          <h1 class="text-xl sm:text-2xl font-black tracking-wide text-white">校園美感精靈圖鑑</h1>
+          <span class="text-sm font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-amber-400 border border-slate-700 font-num hidden sm:inline-block">v1.3.0</span>
         </div>
       </div>
       
-      <!-- 學生身分與統計 -->
-      <div class="flex items-center gap-3">
-        <div id="userBadge" class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-xs text-slate-300">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span id="displayStudentInfo">載入中...</span>
-        </div>
-        <button onclick="openInfoModal()" class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition-colors" title="使用說明與設備資訊">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <!-- 右側功能鍵：圖示按鈕群 -->
+      <div class="flex items-center gap-2 sm:gap-4">
+        <!-- 1. QR Code 掃碼連結 (分享本頁) -->
+        <button onclick="openShareModal()" class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-800 border-2 border-slate-700 hover:bg-amber-500 hover:text-slate-900 flex items-center justify-center text-slate-300 transition-colors" title="QR Code 掃碼連結">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+        </button>
+        <!-- 2. 全螢幕 Toggle -->
+        <button onclick="toggleFullScreen()" class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-800 border-2 border-slate-700 hover:bg-emerald-500 hover:text-slate-900 flex items-center justify-center text-slate-300 transition-colors" title="全螢幕模式">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+        </button>
+        <!-- 3. 課程指引 -->
+        <button onclick="openGuideModal()" class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-800 border-2 border-slate-700 hover:bg-sky-500 hover:text-slate-900 flex items-center justify-center text-slate-300 transition-colors" title="課程指引">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
         </button>
       </div>
     </div>
@@ -82,68 +89,62 @@
   <main class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 space-y-6">
 
     <!-- 探索進度面板 -->
-    <section class="bg-gradient-to-r from-slate-800/90 to-slate-800/40 border border-slate-700/80 rounded-2xl p-4 sm:p-5 shadow-xl relative overflow-hidden">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <section class="bg-gradient-to-r from-slate-800/90 to-slate-800/40 border-2 border-slate-700/80 rounded-3xl p-5 sm:p-7 shadow-xl relative overflow-hidden">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Aesthetic Exploration Dex</span>
-            <span class="text-xs text-slate-400">|</span>
-            <span id="seatDisplay" class="text-xs text-slate-300">未登錄座號</span>
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-sm font-black uppercase tracking-wider text-amber-400 bg-amber-900/30 px-3 py-1 rounded-full">我的尋寶進度</span>
+            <span id="seatDisplay" class="text-sm font-bold text-slate-200">未登錄</span>
           </div>
-          <h2 class="text-xl sm:text-2xl font-black text-white mt-0.5">校園十六大美感元素收錄進度</h2>
-          <p class="text-xs sm:text-sm text-slate-400 mt-1">捕捉校園角落的光影、幾何與質感，找教師審核通過後掃描解鎖卡牌！</p>
+          <h2 class="text-2xl sm:text-3xl font-black text-white mt-1">校園美感元素收錄</h2>
+          <p class="text-base sm:text-lg font-medium text-slate-300 mt-2">尋找校園角落特徵，過關後掃描條碼解鎖卡牌！</p>
         </div>
 
         <!-- 收集度數值 -->
-        <div class="flex items-center gap-4 bg-slate-900/60 border border-slate-700/60 p-3 rounded-xl min-w-[180px] justify-between">
+        <div class="flex items-center gap-6 bg-slate-900/80 border-2 border-slate-700/60 p-4 sm:p-5 rounded-2xl min-w-[220px] justify-between shadow-inner">
           <div>
-            <div class="text-[11px] text-slate-400 font-semibold">解鎖精靈</div>
-            <div class="text-2xl font-black font-num text-amber-400">
-              <span id="unlockedCount">0</span><span class="text-sm text-slate-500 font-normal"> / 16</span>
+            <div class="text-sm text-slate-400 font-bold mb-1">目前解鎖</div>
+            <div class="text-4xl font-black font-num text-amber-400">
+              <span id="unlockedCount">0</span><span class="text-xl text-slate-500 font-bold"> / 16</span>
             </div>
           </div>
-          <div class="w-12 h-12 relative flex items-center justify-center">
-            <svg class="w-12 h-12 transform -rotate-90">
-              <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="4" class="text-slate-700" fill="transparent" />
-              <circle id="progressCircle" cx="24" cy="24" r="20" stroke="currentColor" stroke-width="4" class="text-amber-400 transition-all duration-700" fill="transparent" stroke-dasharray="125.6" stroke-dashoffset="125.6" />
+          <div class="w-16 h-16 relative flex items-center justify-center">
+            <svg class="w-16 h-16 transform -rotate-90">
+              <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="6" class="text-slate-700" fill="transparent" />
+              <circle id="progressCircle" cx="32" cy="32" r="28" stroke="currentColor" stroke-width="6" class="text-amber-400 transition-all duration-700" fill="transparent" stroke-dasharray="175.9" stroke-dashoffset="175.9" />
             </svg>
-            <span id="percentText" class="absolute text-[10px] font-bold font-num text-white">0%</span>
+            <span id="percentText" class="absolute text-sm font-black font-num text-white">0%</span>
           </div>
         </div>
       </div>
 
-      <!-- 快捷工具按鈕 -->
-      <div class="mt-4 pt-4 border-t border-slate-700/50 flex flex-wrap gap-2.5 items-center justify-between">
-        <div class="flex items-center gap-2">
-          <button onclick="startScannerModal()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/20 active:scale-95 transition-all">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
-            <span>相機掃描 QR Code</span>
-          </button>
-          
-          <button onclick="openSimulationModal()" class="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-semibold text-slate-200 transition-colors">
-            <span>⚙️ 模擬抽卡/教學測試</span>
+      <!-- 快捷工具按鈕 (放大優化版) -->
+      <div class="mt-6 pt-5 border-t-2 border-slate-700/50 flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
+        <button onclick="startScannerModal()" class="w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-black text-xl shadow-lg shadow-amber-500/30 active:scale-95 transition-all">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+          <span>開始掃描 QR Code</span>
+        </button>
+        
+        <div class="flex items-center gap-3 justify-center">
+          <!-- 聲音切換 -->
+          <button id="soundToggleBtn" onclick="toggleSound()" class="flex items-center gap-2 text-sm font-bold text-slate-300 hover:text-white px-5 py-3 rounded-xl border-2 border-slate-600 bg-slate-800/80">
+            <span id="soundIcon" class="text-xl">🔊</span>
+            <span id="soundLabel">音效：開</span>
           </button>
         </div>
-
-        <!-- 聲音切換 -->
-        <button id="soundToggleBtn" onclick="toggleSound()" class="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-lg bg-slate-800/50">
-          <span id="soundIcon">🔊</span>
-          <span id="soundLabel">音效：開</span>
-        </button>
       </div>
     </section>
 
     <!-- 十六宮格圖鑑列表 -->
     <section>
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-base font-bold text-slate-200 flex items-center gap-2">
-          <span>十六視覺美感元素方陣</span>
-          <span class="text-xs font-normal text-slate-400">(點選已解鎖卡牌查看捕捉熱點與指標)</span>
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+        <h3 class="text-xl font-black text-slate-100 flex items-center gap-2">
+          <span>👑 我的精靈收集櫃</span>
         </h3>
-        <span class="text-xs text-slate-400 font-num">16 格標準格位</span>
+        <span class="text-sm font-bold text-slate-400 bg-slate-800 px-3 py-1 rounded-full">點選卡牌看提示</span>
       </div>
 
-      <div id="dexGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+      <div id="dexGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-5">
         <!-- 由 JavaScript 動態生成 16 格卡位 -->
       </div>
     </section>
@@ -152,34 +153,30 @@
   <!-- 底部版權與防複製警示 -->
   <footer class="mt-auto border-t border-slate-800/80 bg-slate-950/40 py-4 px-4 text-center text-xs text-slate-500">
     <p>校園美感實境尋寶教具 ‧ 支援無網路離線運作 ‧ 本裝置憑證：<span id="deviceCodeShort" class="font-mono text-slate-400">--------</span></p>
-    <p class="mt-1 text-[11px] text-slate-600">已啟用防轉傳鎖定機制：每個 QR 條碼與學生座號驗證綁定，跨設備無效。</p>
+    <p class="mt-1 text-[11px] text-slate-600">已啟用防轉傳鎖定機制：每個 QR 條碼與學生座號驗證綁定，跨設備無效。 | <button onclick="openSimulationModal()" class="underline hover:text-amber-400 transition-colors">教師測試台</button></p>
   </footer>
 
-  <!-- ==================== 彈窗 1：首次登錄座號與防盜綁定 ==================== -->
-  <div id="authModal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl p-6 shadow-2xl animate-pop">
-      <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-2xl mx-auto mb-3">
-        🛡️
+  <!-- ==================== 彈窗 1：首次登錄座號 ==================== -->
+  <div id="authModal" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-lg flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border-2 border-amber-500/50 w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-[0_0_40px_rgba(245,158,11,0.2)] animate-pop">
+      <div class="w-16 h-16 rounded-2xl bg-amber-500 text-slate-900 flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg">
+        👋
       </div>
-      <h3 class="text-xl font-black text-center text-white">啟動美感精靈圖鑑</h3>
-      <p class="text-xs text-center text-slate-400 mt-1">為了防止組別間轉傳作弊，圖鑑進度將直接鎖定此台平板設備與您的組別／座號。</p>
+      <h3 class="text-2xl sm:text-3xl font-black text-center text-white">哈囉！歡迎尋寶</h3>
       
-      <div class="space-y-3.5 mt-5">
+      <div class="space-y-5 mt-6">
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">班級 / 組別 (例: 5年2班 第3組)</label>
-          <input type="text" id="inputClassGroup" placeholder="請輸入班級與組別" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:border-amber-400 transition-colors">
+          <label class="block text-base font-bold text-slate-200 mb-2">你的班級 / 組別：</label>
+          <input type="text" id="inputClassGroup" placeholder="例如：5年2班 第3組" class="w-full px-5 py-4 rounded-2xl bg-slate-800 border-2 border-slate-600 text-white text-lg font-bold focus:outline-none focus:border-amber-400 transition-colors">
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">主要操作學生座號 (例: 15)</label>
-          <input type="number" id="inputSeat" placeholder="輸入數字座號" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:border-amber-400 transition-colors">
-        </div>
-        <div class="p-3 bg-slate-800/60 rounded-xl border border-slate-700/50 text-xs text-slate-400">
-          <span class="font-bold text-amber-400">防弊機制啟動：</span> 完成後系統將生成設備唯一的防偽特徵碼，後續每次掃描均會驗證座號指紋。
+          <label class="block text-base font-bold text-slate-200 mb-2">你的座號：</label>
+          <input type="number" id="inputSeat" placeholder="輸入數字，例如：15" class="w-full px-5 py-4 rounded-2xl bg-slate-800 border-2 border-slate-600 text-white text-lg font-bold focus:outline-none focus:border-amber-400 transition-colors">
         </div>
       </div>
 
-      <button onclick="registerDeviceUser()" class="w-full mt-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/25 active:scale-[0.98] transition-all">
-        確認綁定設備並開始探索
+      <button onclick="registerDeviceUser()" class="w-full mt-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 text-slate-900 font-black text-xl shadow-xl shadow-amber-500/25 active:scale-[0.98] transition-all">
+        我準備好了！出發
       </button>
     </div>
   </div>
@@ -309,28 +306,70 @@
     </div>
   </div>
 
-  <!-- ==================== 彈窗 6：資訊與設備防偽詳情 ==================== -->
-  <div id="infoModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl p-5 shadow-2xl">
-      <h4 class="font-bold text-white text-base mb-2">校園美感精靈圖鑑系統說明</h4>
-      <div class="text-xs text-slate-300 space-y-2.5 leading-relaxed">
-        <p>1. <b class="text-amber-400">離線即用</b>：全部程式碼、SVG 角色圖騰與音效運算皆整合於單一檔案，無須持續連線網路。</p>
-        <p>2. <b class="text-amber-400">音效與觸覺</b>：採用 Web Audio API 合成頻率音訊，支援平板手機的 Vibration API（觸覺震動回饋）。</p>
-        <p>3. <b class="text-amber-400">防轉傳作弊安全鎖</b>：設備首次登入會計算專屬指紋鹽值（Device Hash），產出的 QR Code 格式如下：</p>
-        <div class="p-2 bg-slate-950 font-mono text-[11px] text-amber-300 rounded border border-slate-800 select-all">
-          AESTHETIC:{ELEMENT_ID}:{SEAT_NO}:{DEVICE_KEY}
-        </div>
-        <p>各組若將網址截圖傳至外班，因設備 Key 與座號不符，系統將拒絕解鎖。</p>
+  <!-- ==================== 新增彈窗：網頁分享 QR Code ==================== -->
+  <div id="shareModal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden flex flex-col items-center justify-center p-4">
+    <div class="w-full max-w-sm bg-slate-900 border-2 border-slate-700 rounded-3xl p-6 shadow-2xl relative text-center">
+      <button onclick="closeShareModal()" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-slate-800 border-2 border-slate-600 text-slate-300 hover:text-white hover:bg-rose-500 flex items-center justify-center text-xl font-bold">✕</button>
+      
+      <h3 class="text-2xl font-black text-white mb-2">快速分享此網頁</h3>
+      <p class="text-base text-slate-400 font-medium mb-6">讓其他平板直接掃描開啟圖鑑</p>
+
+      <div class="bg-white p-4 rounded-2xl inline-block mx-auto border-4 border-slate-800 shadow-lg">
+        <div id="shareQrCode" class="w-[200px] h-[200px] flex items-center justify-center"></div>
       </div>
-      <button onclick="closeInfoModal()" class="w-full mt-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold">
-        關閉
+
+      <button onclick="copyUrl()" class="w-full mt-8 py-4 rounded-2xl bg-slate-800 border-2 border-slate-600 text-white font-bold text-lg hover:bg-slate-700 transition-colors flex items-center justify-center gap-2">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+        一鍵複製網址
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== 新增彈窗：課程指引 (網頁操作與精靈指引) ==================== -->
+  <div id="guideModal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-2xl bg-slate-900 border-2 border-slate-700 rounded-3xl p-6 sm:p-8 shadow-2xl relative max-h-[85vh] overflow-y-auto no-scrollbar">
+      <div class="flex items-center justify-between pb-4 border-b-2 border-slate-800 mb-6">
+        <h3 class="text-2xl sm:text-3xl font-black text-amber-400 flex items-center gap-3">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          課程設計說明
+        </h3>
+        <button onclick="closeGuideModal()" class="w-10 h-10 rounded-full bg-slate-800 border-2 border-slate-600 text-slate-300 hover:text-white hover:bg-rose-500 flex items-center justify-center text-xl font-bold">✕</button>
+      </div>
+
+      <!-- 區塊一：網頁操作說明 -->
+      <div class="mb-8">
+        <h4 class="text-xl font-black text-white mb-4 flex items-center gap-2">
+          <span class="bg-emerald-500 text-slate-900 w-8 h-8 rounded-full flex items-center justify-center text-lg">1</span>
+          網頁操作說明
+        </h4>
+        <div class="bg-slate-800/50 p-5 rounded-2xl border-2 border-slate-700/50 text-base sm:text-lg text-slate-200 font-medium leading-relaxed space-y-3">
+          <p>🎯 <strong class="text-emerald-400">第一步：</strong> 登錄你的組別與座號，圖鑑進度會自動記錄。</p>
+          <p>📷 <strong class="text-emerald-400">第二步：</strong> 到校園中尋找符合「美感元素」的風景並拍照。</p>
+          <p>👨‍🏫 <strong class="text-emerald-400">第三步：</strong> 將照片拿給老師審核，過關後點擊首頁巨大的「開始掃描 QR Code」按鈕。</p>
+          <p>✨ <strong class="text-emerald-400">第四步：</strong> 掃描老師提供的卡牌，即可成功解鎖該精靈！</p>
+        </div>
+      </div>
+
+      <!-- 區塊二：精靈指引 -->
+      <div>
+        <h4 class="text-xl font-black text-white mb-4 flex items-center gap-2">
+          <span class="bg-sky-500 text-slate-900 w-8 h-8 rounded-full flex items-center justify-center text-lg">2</span>
+          精靈指引
+        </h4>
+        <div id="guideList" class="space-y-4">
+          <!-- 由 JavaScript 動態生成精靈提示列表 -->
+        </div>
+      </div>
+
+      <button onclick="closeGuideModal()" class="w-full mt-8 py-4 rounded-2xl bg-slate-800 border-2 border-slate-600 text-white font-bold text-xl hover:bg-slate-700 transition-colors">
+        我了解了，關閉說明
       </button>
     </div>
   </div>
 
   <!-- 提示浮動氣泡 (Toast) -->
-  <div id="toastBox" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-full bg-slate-800 border border-slate-700 text-white text-xs shadow-2xl flex items-center gap-2 transition-all opacity-0 pointer-events-none translate-y-3">
-    <span id="toastIcon">✨</span>
+  <div id="toastBox" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-6 py-4 rounded-2xl bg-slate-800 border-2 border-slate-700 text-white text-lg font-bold shadow-2xl flex items-center gap-3 transition-all opacity-0 pointer-events-none translate-y-3">
+    <span id="toastIcon" class="text-2xl">✨</span>
     <span id="toastMsg">訊息內容</span>
   </div>
 
@@ -639,8 +678,9 @@
     /* =====================================================================
      * 2. 核心狀態與防偽安全鎖 (Device ID, Student Lock, LocalStorage)
      * ===================================================================== */
-    const STORAGE_KEY_AUTH = "AESTHETIC_STUDENT_INFO";
-    const STORAGE_KEY_COLLECTION = "AESTHETIC_UNLOCKED_CARDS";
+    // 更新 Storage Key 以確保每次載入此版本皆為「尚未蒐集任何精靈」的初始狀態
+    const STORAGE_KEY_AUTH = "AESTHETIC_STUDENT_INFO_V2";
+    const STORAGE_KEY_COLLECTION = "AESTHETIC_UNLOCKED_CARDS_V2";
     const STORAGE_KEY_SETTINGS = "AESTHETIC_SOUND_ENABLED";
 
     let currentUser = null;
@@ -776,8 +816,6 @@
 
     function initializeMainApp() {
       // 顯示座號資訊與裝置碼
-      document.getElementById('userBadge').classList.remove('hidden');
-      document.getElementById('displayStudentInfo').innerText = `${currentUser.classGroup} (${currentUser.seat}號)`;
       document.getElementById('seatDisplay').innerText = `${currentUser.classGroup} - ${currentUser.seat} 號`;
       document.getElementById('deviceCodeShort').innerText = currentUser.deviceKey;
 
@@ -887,9 +925,9 @@
       document.getElementById('unlockedCount').innerText = count;
       document.getElementById('percentText').innerText = `${percent}%`;
 
-      // 環狀進度條 125.6 是 2 * PI * 20
+      // 環狀進度條 175.9 是 2 * PI * 28 (新版圈圈半徑 28)
       const circle = document.getElementById('progressCircle');
-      const offset = 125.6 - (125.6 * (count / total));
+      const offset = 175.9 - (175.9 * (count / total));
       circle.style.strokeDashoffset = offset;
     }
 
@@ -1076,15 +1114,6 @@
       document.getElementById('simulationModal').classList.add('hidden');
     }
 
-    function openInfoModal() {
-      playSound('tap');
-      document.getElementById('infoModal').classList.remove('hidden');
-    }
-
-    function closeInfoModal() {
-      document.getElementById('infoModal').classList.add('hidden');
-    }
-
     function toggleSound() {
       soundEnabled = !soundEnabled;
       localStorage.setItem(STORAGE_KEY_SETTINGS, soundEnabled.toString());
@@ -1120,6 +1149,113 @@
         toast.classList.remove('opacity-100', 'translate-y-0');
         toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-3');
       }, 3200);
+    }
+
+    /* =====================================================================
+     * 8. 全螢幕、動態QR碼與課程指引模組 (新增)
+     * ===================================================================== */
+    
+    // 全螢幕切換
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          showToast(`❌ 無法切換全螢幕: ${err.message}`);
+        });
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+      playSound('tap');
+    }
+
+    // 打開分享QR碼
+    function openShareModal() {
+      playSound('tap');
+      document.getElementById('shareModal').classList.remove('hidden');
+      const qrContainer = document.getElementById('shareQrCode');
+      qrContainer.innerHTML = '';
+      
+      // 使用目前真實網址
+      const currentUrl = window.location.href;
+      
+      new QRCode(qrContainer, {
+        text: currentUrl,
+        width: 200,
+        height: 200,
+        colorDark : "#0f172a",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.M
+      });
+    }
+
+    function closeShareModal() {
+      playSound('tap');
+      document.getElementById('shareModal').classList.add('hidden');
+    }
+
+    // 一鍵複製網址
+    function copyUrl() {
+      const url = window.location.href;
+      const textArea = document.createElement("textarea");
+      textArea.value = url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        playSound('unlock');
+        showToast("✅ 網址複製成功！可直接貼給同學");
+      } catch (err) {
+        playSound('error');
+        showToast("❌ 複製失敗，請手動複製網址列");
+      }
+      document.body.removeChild(textArea);
+    }
+
+    // 打開課程指引並動態渲染內容
+    function openGuideModal() {
+      playSound('tap');
+      renderGuideList();
+      document.getElementById('guideModal').classList.remove('hidden');
+    }
+
+    function closeGuideModal() {
+      playSound('tap');
+      document.getElementById('guideModal').classList.add('hidden');
+    }
+
+    function renderGuideList() {
+      const container = document.getElementById('guideList');
+      // 修正：檢查是否有實際的子元素節點，避免被 HTML 註解與空白字元干擾
+      if(container.children.length > 0) return; // 已渲染過就不重複
+
+      AESTHETIC_DATABASE.forEach(item => {
+        const row = document.createElement('div');
+        row.className = `p-4 sm:p-5 rounded-2xl bg-slate-800/80 border-2 border-slate-700/80 flex flex-col gap-3`;
+        row.innerHTML = `
+          <div class="flex items-center gap-4">
+            <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex-shrink-0 flex items-center justify-center p-1.5 border-2 shadow-lg bg-gradient-to-br ${item.color} ${item.border}">
+              ${getCharacterVisualHtml(item, "w-full h-full object-contain")}
+            </div>
+            <div class="flex flex-col justify-center">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-xs font-black px-2.5 py-0.5 rounded-md text-white ${item.bgBadge}">${item.element}系</span>
+                <span class="text-xs text-slate-400 font-num font-bold">No.${item.no}</span>
+              </div>
+              <span class="text-xl sm:text-2xl font-black text-white tracking-wide">${item.name}</span>
+            </div>
+          </div>
+          <div class="bg-slate-900/50 p-3 sm:p-4 rounded-xl border border-slate-700/50 mt-1">
+            <div class="font-bold text-amber-400 text-sm mb-1.5">🔍 核心觀察指標</div>
+            <div class="text-slate-300 text-sm sm:text-base font-medium leading-relaxed">${item.indicator}</div>
+          </div>
+          <div class="bg-slate-900/50 p-3 sm:p-4 rounded-xl border border-slate-700/50">
+            <div class="font-bold text-emerald-400 text-sm mb-1.5">📍 校園實體捕捉熱點</div>
+            <div class="text-slate-300 text-sm sm:text-base font-medium leading-relaxed">${item.spot}</div>
+          </div>
+        `;
+        container.appendChild(row);
+      });
     }
   </script>
 </body>
